@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newton-Raphson Method Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8892b0;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #64ffda;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: #64ffda;
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: #a8b2d1;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #64ffda;
+            box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: #5a6785;
+        }
+
+        .form-hint {
+            font-size: 0.78rem;
+            color: #5a6785;
+            margin-top: 4px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #a8b2d1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e0e0e0;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 10px;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            display: none;
+        }
+
+        .result-box.visible {
+            display: block;
+        }
+
+        .result-box .result-label {
+            font-size: 0.85rem;
+            color: #64ffda;
+            margin-bottom: 4px;
+        }
+
+        .result-box .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .result-box .result-info {
+            font-size: 0.85rem;
+            color: #8892b0;
+            margin-top: 8px;
+        }
+
+        .error-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 10px;
+            background: rgba(255, 82, 82, 0.08);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            color: #ff5252;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-box.visible {
+            display: block;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+        }
+
+        .iterations-card {
+            grid-column: 1 / -1;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead {
+            background: rgba(100, 255, 218, 0.08);
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            color: #64ffda;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #ccd6f6;
+            font-family: 'Courier New', monospace;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #5a6785;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .chart-container {
+                height: 280px;
+            }
+        }
+
+        .examples-list {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .example-chip {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #a8b2d1;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Courier New', monospace;
+        }
+
+        .example-chip:hover {
+            background: rgba(100, 255, 218, 0.1);
+            border-color: rgba(100, 255, 218, 0.3);
+            color: #64ffda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Newton-Raphson Method</h1>
+        <p class="subtitle">Numerical root-finding algorithm — iterative approximation of function zeros</p>
+
+        <div class="main-grid">
+            <!-- Input Panel -->
+            <div class="card">
+                <h2>Parameters</h2>
+                <div class="form-group">
+                    <label for="function-input">Function f(x)</label>
+                    <input type="text" id="function-input" placeholder="e.g., x^2 - 4" autocomplete="off">
+                    <p class="form-hint">Supports: x^n, sin(x), cos(x), tan(x), exp(x), log(x), sqrt(x), abs(x)</p>
+                </div>
+                <div class="examples-list">
+                    <span class="example-chip" onclick="setExample('x^2 - 4')">x² - 4</span>
+                    <span class="example-chip" onclick="setExample('sin(x)')">sin(x)</span>
+                    <span class="example-chip" onclick="setExample('exp(x) - 3')">eˣ - 3</span>
+                    <span class="example-chip" onclick="setExample('x^3 - 2*x - 5')">x³ - 2x - 5</span>
+                    <span class="example-chip" onclick="setExample('cos(x) - x')">cos(x) - x</span>
+                </div>
+
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="x0-input">Initial Approximation (x₀)</label>
+                    <input type="number" id="x0-input" placeholder="e.g., 1" step="any" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="iterations-input">Number of Iterations</label>
+                    <input type="number" id="iterations-input" placeholder="e.g., 10" min="1" max="100" value="10">
+                </div>
+
+                <div class="form-group">
+                    <label for="precision-input">Decimal Precision</label>
+                    <input type="number" id="precision-input" placeholder="e.g., 6" min="1" max="15" value="6">
+                </div>
+
+                <button class="btn btn-primary" onclick="calculate()">Calculate Root</button>
+                <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+
+                <div class="result-box" id="result-box">
+                    <div class="result-label">Approximate Root</div>
+                    <div class="result-value" id="result-value"></div>
+                    <div class="result-info" id="result-info"></div>
+                </div>
+
+                <div class="error-box" id="error-box"></div>
+            </div>
+
+            <!-- Chart Panel -->
+            <div class="card">
+                <h2>Graph</h2>
+                <div class="chart-container">
+                    <canvas id="chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Iterations Table -->
+            <div class="card iterations-card" id="iterations-card" style="display: none;">
+                <h2>Iteration Steps</h2>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Iteration</th>
+                                <th>x&#8345;</th>
+                                <th>f(x&#8345;)</th>
+                                <th>f'(x&#8345;)</th>
+                                <th>x&#8345;&#8330;&#8321;</th>
+                                <th>|x&#8345;&#8330;&#8321; - x&#8345;|</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iterations-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+
+        function setExample(expr) {
+            document.getElementById('function-input').value = expr;
+        }
+
+        function clearAll() {
+            document.getElementById('function-input').value = '';
+            document.getElementById('x0-input').value = '1';
+            document.getElementById('iterations-input').value = '10';
+            document.getElementById('precision-input').value = '6';
+            document.getElementById('result-box').classList.remove('visible');
+            document.getElementById('error-box').classList.remove('visible');
+            document.getElementById('iterations-card').style.display = 'none';
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('error-box');
+            errorBox.textContent = message;
+            errorBox.classList.add('visible');
+            document.getElementById('result-box').classList.remove('visible');
+        }
+
+        function hideError() {
+            document.getElementById('error-box').classList.remove('visible');
+        }
+
+        function evaluateFunction(expr, x) {
+            try {
+                const scope = { x: x };
+                return math.evaluate(expr, scope);
+            } catch (e) {
+                return NaN;
+            }
+        }
+
+        function numericalDerivative(expr, x) {
+            const h = 0.000000001;
+            const fx = evaluateFunction(expr, x);
+            const fxh = evaluateFunction(expr, x + h);
+            if (isNaN(fx) || isNaN(fxh)) return NaN;
+            return (fxh - fx) / h;
+        }
+
+        function calculate() {
+            hideError();
+
+            const expr = document.getElementById('function-input').value.trim();
+            const x0 = parseFloat(document.getElementById('x0-input').value);
+            const maxIter = parseInt(document.getElementById('iterations-input').value);
+            const precision = parseInt(document.getElementById('precision-input').value);
+
+            // Validation
+            if (!expr) {
+                showError('Please enter a function.');
+                return;
+            }
+
+            if (isNaN(x0)) {
+                showError('Please enter a valid initial approximation.');
+                return;
+            }
+
+            if (isNaN(maxIter) || maxIter < 1 || maxIter > 100) {
+                showError('Number of iterations must be between 1 and 100.');
+                return;
+            }
+
+            if (isNaN(precision) || precision < 1 || precision > 15) {
+                showError('Decimal precision must be between 1 and 15.');
+                return;
+            }
+
+            // Test if function is valid
+            const testVal = evaluateFunction(expr, x0);
+            if (isNaN(testVal) || !isFinite(testVal)) {
+                showError('Invalid function or the function is undefined at x₀. Please check your input.');
+                return;
+            }
+
+            // Newton-Raphson iteration
+            const iterations = [];
+            let xCurrent = x0;
+            let converged = false;
+
+            for (let i = 0; i < maxIter; i++) {
+                const fx = evaluateFunction(expr, xCurrent);
+                const fpx = numericalDerivative(expr, xCurrent);
+
+                if (isNaN(fx) || !isFinite(fx)) {
+                    showError(`Function is undefined at x = ${xCurrent.toFixed(precision)} (iteration ${i + 1}).`);
+                    return;
+                }
+
+                if (isNaN(fpx) || !isFinite(fpx)) {
+                    showError(`Derivative is undefined at x = ${xCurrent.toFixed(precision)} (iteration ${i + 1}).`);
+                    return;
+                }
+
+                if (Math.abs(fpx) < 1e-14) {
+                    showError(`Division by zero: f'(x) ≈ 0 at x = ${xCurrent.toFixed(precision)} (iteration ${i + 1}). Try a different initial approximation.`);
+                    return;
+                }
+
+                const xNext = xCurrent - fx / fpx;
+                const diff = Math.abs(xNext - xCurrent);
+
+                iterations.push({
+                    n: i + 1,
+                    xn: xCurrent,
+                    fx: fx,
+                    fpx: fpx,
+                    xNext: xNext,
+                    diff: diff
+                });
+
+                if (diff < Math.pow(10, -(precision + 2))) {
+                    converged = true;
+                    xCurrent = xNext;
+                    break;
+                }
+
+                xCurrent = xNext;
+
+                if (!isFinite(xCurrent)) {
+                    showError(`Method diverged at iteration ${i + 1}. The sequence is not converging. Try a different initial approximation.`);
+                    return;
+                }
+            }
+
+            // Display result
+            const resultBox = document.getElementById('result-box');
+            const resultValue = document.getElementById('result-value');
+            const resultInfo = document.getElementById('result-info');
+
+            resultValue.textContent = `x = ${xCurrent.toFixed(precision)}`;
+            const fAtRoot = evaluateFunction(expr, xCurrent);
+            resultInfo.textContent = `f(${xCurrent.toFixed(precision)}) = ${fAtRoot.toExponential(3)} | ${converged ? 'Converged' : 'Max iterations reached'} after ${iterations.length} iteration${iterations.length > 1 ? 's' : ''}`;
+            resultBox.classList.add('visible');
+
+            // Display iterations table
+            displayIterations(iterations, precision);
+
+            // Plot the graph
+            plotGraph(expr, xCurrent, x0, precision);
+        }
+
+        function displayIterations(iterations, precision) {
+            const card = document.getElementById('iterations-card');
+            const tbody = document.getElementById('iterations-body');
+            tbody.innerHTML = '';
+
+            iterations.forEach(iter => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${iter.n}</td>
+                    <td>${iter.xn.toFixed(precision)}</td>
+                    <td>${iter.fx.toExponential(4)}</td>
+                    <td>${iter.fpx.toFixed(precision)}</td>
+                    <td>${iter.xNext.toFixed(precision)}</td>
+                    <td>${iter.diff.toExponential(4)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            card.style.display = 'block';
+        }
+
+        function plotGraph(expr, root, x0, precision) {
+            const canvas = document.getElementById('chart');
+            if (chart) {
+                chart.destroy();
+            }
+
+            // Determine plot range
+            const center = root;
+            const range = Math.max(Math.abs(root - x0) * 2, 4);
+            const xMin = center - range;
+            const xMax = center + range;
+            const step = (xMax - xMin) / 200;
+
+            const xValues = [];
+            const fValues = [];
+            const fpValues = [];
+
+            for (let x = xMin; x <= xMax; x += step) {
+                const fx = evaluateFunction(expr, x);
+                const fpx = numericalDerivative(expr, x);
+
+                xValues.push(parseFloat(x.toFixed(6)));
+
+                if (isFinite(fx) && Math.abs(fx) < 1000) {
+                    fValues.push(fx);
+                } else {
+                    fValues.push(null);
+                }
+
+                if (isFinite(fpx) && Math.abs(fpx) < 1000) {
+                    fpValues.push(fpx);
+                } else {
+                    fpValues.push(null);
+                }
+            }
+
+            // Find closest index to root for annotation
+            let rootIndex = 0;
+            let minDist = Infinity;
+            for (let i = 0; i < xValues.length; i++) {
+                const d = Math.abs(xValues[i] - root);
+                if (d < minDist) {
+                    minDist = d;
+                    rootIndex = i;
+                }
+            }
+
+            chart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        {
+                            label: 'f(x)',
+                            data: fValues,
+                            borderColor: '#00d2ff',
+                            backgroundColor: 'rgba(0, 210, 255, 0.05)',
+                            borderWidth: 2.5,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: "f'(x)",
+                            data: fpValues,
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.05)',
+                            borderWidth: 1.8,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            borderDash: [6, 3],
+                            fill: false
+                        },
+                        {
+                            label: `Root (x \u2248 ${root.toFixed(precision)})`,
+                            data: xValues.map((x, i) => i === rootIndex ? evaluateFunction(expr, root) : null),
+                            borderColor: '#64ffda',
+                            backgroundColor: '#64ffda',
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            pointStyle: 'crossRot',
+                            showLine: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#a8b2d1',
+                                font: { size: 11 },
+                                padding: 16
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 40, 60, 0.95)',
+                            titleColor: '#64ffda',
+                            bodyColor: '#e0e0e0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: function(items) {
+                                    return `x = ${items[0].label}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            ticks: {
+                                color: '#5a6785',
+                                maxTicksLimit: 10
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'x',
+                                color: '#8892b0'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#5a6785',
+                                maxTicksLimit: 8
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'y',
+                                color: '#8892b0'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
